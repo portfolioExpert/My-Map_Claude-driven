@@ -10,6 +10,10 @@ jobs:
     # 2. 'claude-bot'이라는 라벨이 붙었을 때만 이 작업이 실행됨
     if: github.event.label.name == 'claude-driven-coding'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
     
     steps:
       - name: 이슈 내용 확인
@@ -28,3 +32,42 @@ jobs:
               repo: context.repo.repo,
               body: '🤖 Claude가 이슈 분석을 시작했습니다! 잠시만 기다려주세요.'
             })
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run Claude Code Agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 1. 이슈 내용과 댓글 내용을 변수로 저장
+          ISSUE_BODY="${{ github.event.issue.body }}"
+          COMMENT_BODY="${{ github.event.comment.body }}"
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          
+          # 2. Claude에게 전달할 프롬프트 구성
+          # --once 모드는 대화형이 아닌 단발성 실행을 의미합니다.
+          claude --once "
+            너는 시니어 소프트웨어 엔지니어다. 
+            이슈 #${ISSUE_NUMBER}의 내용: ${ISSUE_BODY}
+            추가 요청사항: ${COMMENT_BODY}
+            
+            위 요구사항을 분석해서:
+            1. 새로운 브랜치 'feat/issue-${ISSUE_NUMBER}'를 생성해라.
+            2. 코드를 수정하고 관련 테스트를 수행해라.
+            3. 수정 사항을 커밋하고 푸시해라.
+            4. 마지막으로 base 브랜치로 Pull Request를 생성해라.
+            
+            모든 과정에서 발생한 작업 요약은 이슈 댓글로 남겨줘.
+          "
