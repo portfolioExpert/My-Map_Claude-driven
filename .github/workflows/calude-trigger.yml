@@ -49,7 +49,7 @@ jobs:
       - name: Run Claude Code Agent
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # 1. 이슈 내용과 댓글 내용을 변수로 저장
           ISSUE_BODY="${{ github.event.issue.body }}"
